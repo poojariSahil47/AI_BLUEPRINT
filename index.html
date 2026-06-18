@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResearchMentor — Paper Assistant</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap">
+    <style>
+        :root {
+            --navy: #1a2744;
+            --blue: #2563eb;
+            --blue-light: #dbeafe;
+            --slate: #64748b;
+            --slate-light: #f1f5f9;
+            --green: #16a34a;
+            --green-light: #dcfce7;
+            --amber: #d97706;
+            --amber-light: #fef3c7;
+            --red: #dc2626;
+            --red-light: #fee2e2;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; color: var(--text); background-color: #fafbfc; display: flex; min-height: 100vh; }
+
+        /* Sidebar Styling */
+        #sidebar { width: 280px; background-color: var(--navy); color: #e2e8f0; padding: 1.5rem; flex-shrink: 0; }
+        #sidebar h3 { font-family: 'Merriweather', serif; color: white; margin-bottom: 1.5rem; font-size: 1.25rem; }
+        .nav-btn { display: block; width: 100%; text-align: left; padding: 0.6rem 0.8rem; background: none; border: none; color: #cbd5e1; cursor: pointer; border-radius: 6px; font-size: 0.875rem; margin-bottom: 0.25rem; transition: background 0.2s; }
+        .nav-btn:hover, .nav-btn.active { background: rgba(255,255,255,0.08); color: white; }
+        .sidebar-status { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; color: #94a3b8; }
+        .sidebar-status p { margin-bottom: 0.4rem; }
+
+        /* Container Viewports */
+        #main-container { flex-grow: 1; padding: 1.5rem 2rem 3rem 2rem; max-width: 1200px; display: flex; flex-direction: column; }
+        .hero { background: linear-gradient(135deg, #1a2744 0%, #1e3a8a 50%, #1d4ed8 100%); border-radius: 12px; padding: 2rem 2.5rem; margin-bottom: 1.5rem; color: white; }
+        .hero h1 { font-family: 'Merriweather', serif; font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .hero p { font-size: 0.95rem; opacity: 0.85; }
+
+        /* Progress Steps Framework */
+        .progress-wrap { margin-bottom: 1.5rem; }
+        .progress-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 500; }
+        .progress-track { background: var(--border); border-radius: 99px; height: 6px; width: 100%; position: relative; }
+        .progress-fill { background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 99px; height: 6px; width: 0%; transition: width 0.4s; }
+
+        /* Card and Components Layout */
+        .card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .card-title { font-weight: 600; font-size: 0.95rem; color: var(--navy); margin-bottom: 0.75rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem; color: var(--text); }
+        input[type="text"], select, textarea, input[type="number"] { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--text); }
+        textarea { resize: vertical; }
+
+        /* Action Controls Layout */
+        button.btn-primary { background-color: var(--blue); color: white; border: none; padding: 0.5rem 1.2rem; font-weight: 600; font-size: 0.875rem; border-radius: 7px; cursor: pointer; transition: background 0.2s; }
+        button.btn-primary:hover { background-color: #1d4ed8; }
+        button.btn-secondary { background-color: transparent; border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1.2rem; font-weight: 600; font-size: 0.875rem; border-radius: 7px; cursor: pointer; }
+        button.btn-secondary:hover { background-color: var(--slate-light); }
+        button.btn-danger { background-color: transparent; border: 1px solid var(--red); color: var(--red); padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 4px; cursor: pointer; }
+        button.btn-danger:hover { background-color: var(--red-light); }
+
+        /* Step Header */
+        .step-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; }
+        .step-num { background: var(--navy); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
+        .step-title { font-size: 1.2rem; font-weight: 700; color: var(--navy); font-family: 'Merriweather', serif; }
+
+        /* Boxes Alerts Contexts */
+        .info-box { background: var(--blue-light); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #1e40af; margin-bottom: 1rem; }
+        .warn-box { background: var(--amber-light); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #92400e; margin-bottom: 1rem; }
+        .success-box { background: var(--green-light); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #14532d; margin-bottom: 1rem; }
+        .unverified { background: var(--red-light); border: 1px solid #fca5a5; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.82rem; color: var(--red); margin-top: 0.3rem; }
+        .verified { background: var(--green-light); border: 1px solid #86efac; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.82rem; color: var(--green); margin-top: 0.3rem; }
+        .section-box { background: #fafbfc; border: 1px solid var(--border); border-left: 4px solid var(--blue); border-radius: 0 8px 8px 0; padding: 1rem 1.25rem; margin-bottom: 0.75rem; font-size: 0.9rem; line-height: 1.7; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; margin-right: 0.3rem; }
+        .badge-blue { background: var(--blue-light); color: var(--blue); }
+        .badge-green { background: var(--green-light); color: var(--green); }
+        .badge-amber { background: var(--amber-light); color: var(--amber); }
+        .badge-red { background: var(--red-light); color: var(--red); }
+
+        /* Tab Layout Infrastructure */
+        .tabs-header { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1rem; gap: 0.5rem; }
+        .tab-link { padding: 0.5rem 1rem; border: none; background: none; cursor: pointer; font-size: 0.875rem; color: var(--text-muted); border-bottom: 2px solid transparent; }
+        .tab-link.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .step-panel { display: none; }
+        .step-panel.active { display: block; }
+        .topic-selection-card { display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; background: #fff; }
+        .metric-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .metric-card { flex: 1; min-width: 120px; background: var(--slate-light); border-radius: 8px; padding: 0.875rem 1rem; text-align: center; }
+        .metric-val { font-size: 1.5rem; font-weight: 700; color: var(--navy); }
+        .metric-lbl { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+        pre { background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem; overflow-x: auto; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h3>ResearchMentor</h3>
+        <div id="nav-buttons-container"></div>
+        <div class="sidebar-status">
+            <h4>Project Status</h4>
+            <p id="stat-refs">Refs: 0 uploaded</p>
+            <p id="stat-topic">Topic: Not set</p>
+            <p id="stat-sections">Sections: 0 written</p>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div class="hero">
+            <h1 id="hero-title">New Research Paper</h1>
+            <p id="hero-meta">Research Paper Assistant | Build your paper step by step with AI guidance</p>
+        </div>
+
+        <div class="progress-wrap">
+            <div id="progress-step-text" class="progress-label">Step 1 of 13</div>
+            <div class="progress-track"><div id="progress-bar-fill" class="progress-fill"></div></div>
+        </div>
+
+        <div id="step-panel-1" class="step-panel">
+            <div class="step-header"><div class="step-num">1</div><div class="step-title">Assignment Setup</div></div>
+            <div class="info-box">Fill in your assignment details. This context guides all AI responses.</div>
+            <div class="card">
+                <div class="grid-2">
+                    <div>
+                        <div class="form-group"><label>Paper Title</label><input type="text" id="setup-title" placeholder="Enter your paper title"></div>
+                        <div class="form-group"><label>Subject / Course</label><input type="text" id="setup-subject" placeholder="e.g. Machine Learning"></div>
+                        <div class="form-group"><label>Research Domain</label><input type="text" id="setup-domain" placeholder="e.g. Computer Vision, NLP"></div>
+                        <div class="form-group"><label>Academic Level</label><select id="setup-level"><option value="BCA">BCA</option><option value="BTech" selected>BTech</option><option value="MCA">MCA</option><option value="MBA">MBA</option><option value="MSc">MSc</option><option value="Other">Other</option></select></div>
+                        <div class="form-group"><label>Citation Style</label><select id="setup-citation"><option value="IEEE">IEEE</option><option value="APA">APA</option><option value="MLA">MLA</option><option value="Harvard">Harvard</option><option value="Chicago">Chicago</option></select></div>
+                    </div>
+                    <div>
+                        <div class="form-group"><label>Target Journal/Conference Format</label><select id="setup-journal"><option value="IEEE">IEEE</option><option value="Springer">Springer</option><option value="Elsevier">Elsevier</option><option value="ACM">ACM</option><option value="APA">APA</option><option value="General">General</option></select></div>
+                        <div class="form-group"><label>Paper Length</label><select id="setup-length"><option value="4-6 pages">4-6 pages</option><option value="6-8 pages" selected>6-8 pages</option><option value="8-12 pages">8-12 pages</option><option value="12-20 pages">12-20 pages</option></select></div>
+                        <div class="form-group"><label>Submission Deadline</label><input type="text" id="setup-deadline" placeholder="YYYY-MM-DD"></div>
+                        <div class="form-group"><label>Student Name(s)</label><input type="text" id="setup-names" placeholder="Full name(s) of authors"></div>
+                        <div class="form-group"><label>Guide / Supervisor</label><input type="text" id="setup-guide" placeholder="Prof. Name"></div>
+                        <div class="form-group"><label>College / University</label><input type="text" id="setup-college" placeholder="Institution name"></div>
+                    </div>
+                </div>
+                <div class="form-group"><label>Assignment Prompt / Brief</label><textarea id="setup-prompt" rows="3" placeholder="Paste your assignment prompt or describe expectations."></textarea></div>
+                <button class="btn-primary" onclick="saveSetup()">Save Setup and Continue</button>
+            </div>
+        </div>
+
+        <div id="step-panel-2" class="step-panel">
+            <div class="step-header"><div class="step-num">2</div><div class="step-title">Reference Library</div></div>
+            <div class="info-box">Upload PDF papers. Extracted details are stored as verified references.</div>
+            <div class="card">
+                <div class="form-group"><label>Upload PDF References</label><input type="file" id="ref-file-input" accept=".pdf"></div>
+                <button class="btn-primary" onclick="uploadReference()">Upload and Process Reference</button>
+            </div>
+            <div id="references-list-container"></div>
+            <div style="margin-top: 1rem;"><button class="btn-secondary" onclick="navigateStep(1)">← Back to Setup</button> <button class="btn-primary" onclick="navigateStep(3)">Continue to Topic Discovery →</button></div>
+        </div>
+
+        <div id="step-panel-3" class="step-panel">
+            <div class="step-header"><div class="step-num">3</div><div class="step-title">Topic Discovery</div></div>
+            <div class="card">
+                <button class="btn-primary" onclick="generateTopics()">Generate 5 Research Topics</button>
+            </div>
+            <div id="topics-output-container"></div>
+            <div class="card" style="margin-top: 1rem;">
+                <div class="form-group"><label>Or enter your own topic:</label><input type="text" id="custom-topic-input" placeholder="Type a custom topic..."><button class="btn-secondary" style="margin-top: 0.5rem;" onclick="useCustomTopic()">Use This Topic</button></div>
+            </div>
+        </div>
+
+        <div id="step-panel-4" class="step-panel">
+            <div class="step-header"><div class="step-num">4</div><div class="step-title">Research Gap Analysis</div></div>
+            <div class="card"><p id="gap-active-topic"></p><button class="btn-primary" style="margin-top:0.5rem;" onclick="analyzeResearchGap()">Analyze Research Gap</button></div>
+            <div class="card">
+                <div class="tabs-header">
+                    <button class="tab-link active" onclick="switchSubTab(event, 'gap-trends')">Current Trends</button>
+                    <button class="tab-link" onclick="switchSubTab(event, 'gap-limitations')">Limitations</button>
+                    <button class="tab-link" onclick="switchSubTab(event, 'gap-gaps')">Research Gaps</button>
+                    <button class="tab-link" onclick="switchSubTab(event, 'gap-opportunities')">Future Opportunities</button>
+                </div>
+                <div id="gap-trends" class="tab-content active"></div>
+                <div id="gap-limitations" class="tab-content"></div>
+                <div id="gap-gaps" class="tab-content"></div>
+                <div id="gap-opportunities" class="tab-content"></div>
+            </div>
+            <button class="btn-primary" onclick="navigateStep(5)">Continue to Thesis Builder →</button>
+        </div>
+
+        <div id="step-panel-5" class="step-panel">
+            <div class="step-header"><div class="step-num">5</div><div class="step-title">Thesis Builder</div></div>
+            <div class="card"><button class="btn-primary" onclick="generateThesisFramework()">Generate Thesis Components</button></div>
+            <div class="card" id="thesis-form-container">
+                <div class="form-group"><label>Problem Statement</label><textarea id="thesis-problem" rows="3"></textarea></div>
+                <div class="form-group"><label>Research Question</label><textarea id="thesis-question" rows="2"></textarea></div>
+                <div class="form-group"><label>Hypothesis</label><textarea id="thesis-hypothesis" rows="2"></textarea></div>
+                <div class="form-group"><label>Expected Contribution</label><textarea id="thesis-contribution" rows="2"></textarea></div>
+                <div id="objectives-inputs-container"></div>
+                <button class="btn-primary" onclick="saveThesisState()">Continue to Outline →</button>
+            </div>
+        </div>
+
+        <div id="step-panel-6" class="step-panel">
+            <div class="step-header"><div class="step-num">6</div><div class="step-title">Outline Builder</div></div>
+            <div class="card"><button class="btn-primary" onclick="generateOutlineStructure()">Generate Paper Outline</button></div>
+            <div id="outline-accordion-container"></div>
+            <button class="btn-primary" style="margin-top:1rem;" onclick="navigateStep(7)">Continue to Section Builder →</button>
+        </div>
+
+        <div id="step-panel-7" class="step-panel">
+            <div class="step-header"><div class="step-num">7</div><div class="step-title">Section Builder</div></div>
+            <div class="info-box">Generate each section individually. Review and edit before moving to the next.</div>
+            <div class="tabs-header" id="sections-tabs-header"></div>
+            <div id="sections-tabs-contents"></div>
+        </div>
+
+        <div id="step-panel-8" class="step-panel">
+            <div class="step-header"><div class="step-num">8</div><div class="step-title">Experiment Builder</div></div>
+            <div class="info-box">Enter your experiment details. The AI will help format them for the Results section.</div>
+            <div class="card">
+                <div class="grid-2">
+                    <div>
+                        <div class="form-group"><label>Dataset Used</label><input type="text" id="exp-dataset" placeholder="e.g. MNIST, CIFAR-10"></div>
+                        <div class="form-group"><label>Model / Algorithm</label><input type="text" id="exp-model" placeholder="e.g. CNN, BERT"></div>
+                        <div class="form-group"><label>Parameters / Configuration</label><textarea id="exp-params" rows="3" placeholder="e.g. Learning rate: 0.001"></textarea></div>
+                    </div>
+                    <div>
+                        <div class="form-group"><label>Accuracy (%)</label><input type="number" id="exp-accuracy" step="0.1" value="0"></div>
+                        <div class="form-group"><label>Precision (%)</label><input type="number" id="exp-precision" step="0.1" value="0"></div>
+                        <div class="form-group"><label>Recall (%)</label><input type="number" id="exp-recall" step="0.1" value="0"></div>
+                        <div class="form-group"><label>F1 Score (%)</label><input type="number" id="exp-f1" step="0.1" value="0"></div>
+                    </div>
+                </div>
+                <div class="form-group"><label>Baseline / Comparison Model</label><input type="text" id="exp-baseline" placeholder="e.g. SVM with 82% accuracy"></div>
+                <div class="form-group"><label>Additional Notes</label><textarea id="exp-notes" rows="2"></textarea></div>
+                <button class="btn-primary" onclick="saveExperimentData()">Save Experiment Data</button>
+            </div>
+            <div class="card">
+                <button class="btn-primary" onclick="generateExperimentSummary()">Generate Results Summary from Experiment Data</button>
+            </div>
+            <div class="metric-row">
+                <div class="metric-card"><div class="metric-val" id="m-acc">—</div><div class="metric-lbl">Accuracy</div></div>
+                <div class="metric-card"><div class="metric-val" id="m-pre">—</div><div class="metric-lbl">Precision</div></div>
+                <div class="metric-card"><div class="metric-val" id="m-rec">—</div><div class="metric-lbl">Recall</div></div>
+                <div class="metric-card"><div class="metric-val" id="m-f1">—</div><div class="metric-lbl">F1 Score</div></div>
+            </div>
+        </div>
+
+        <div id="step-panel-9" class="step-panel">
+            <div class="step-header"><div class="step-num">9</div><div class="step-title">Figures & Charts</div></div>
+            <div class="info-box">Upload a CSV to generate charts for your paper.</div>
+            <div class="card">
+                <div class="form-group"><label>Upload CSV Data</label><input type="file" id="chart-csv-input" accept=".csv"></div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Chart Type</label><select id="chart-type"><option value="Bar">Bar</option><option value="Line">Line</option><option value="Scatter">Scatter</option><option value="Pie">Pie</option><option value="Box">Box</option></select></div>
+                    <div class="form-group"><label>X Axis Column Name</label><input type="text" id="chart-x-col" placeholder="Enter X column heading exact"></div>
+                    <div class="form-group"><label>Y Axis Column Name</label><input type="text" id="chart-y-col" placeholder="Enter Y column heading exact"></div>
+                </div>
+                <button class="btn-primary" onclick="generateChartImage()">Generate Chart</button>
+            </div>
+            <div class="card" id="chart-rendering-viewport" style="display:none; text-align:center;">
+                <div class="card-title">Generated Data Visualisation File</div>
+                <img id="rendered-chart-img" style="max-width:100%; height:auto; margin-bottom:1rem;" src="" alt="Chart graphic">
+                <br>
+                <button class="btn-secondary" onclick="downloadChartDirect()">Download Chart (PNG)</button>
+            </div>
+        </div>
+
+        <div id="step-panel-10" class="step-panel">
+            <div class="step-header"><div class="step-num">10</div><div class="step-title">Citation Manager</div></div>
+            <div class="grid-2">
+                <div>
+                    <h3>Verified Citations</h3>
+                    <div class="success-box">These citations come from papers you uploaded.</div>
+                    <div id="verified-citations-zone"></div>
+                </div>
+                <div>
+                    <h3>Unverified Citations</h3>
+                    <div class="warn-box">These may appear in AI-generated text. Verify before submission.</div>
+                    <div id="unverified-citations-zone"></div>
+                    <div class="card" style="margin-top:1rem;">
+                        <div class="card-title">Add Unverified Citation (to track)</div>
+                        <div class="form-group"><label>Title</label><input type="text" id="track-cite-title"></div>
+                        <div class="form-group"><label>Authors</label><input type="text" id="track-cite-authors"></div>
+                        <button class="btn-primary" onclick="trackManualUnverifiedCitation()">Track as Unverified</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="step-panel-11" class="step-panel">
+            <div class="step-header"><div class="step-num">11</div><div class="step-title">Revision Workspace</div></div>
+            <div class="info-box">Select a section to review and improve. AI will preserve your meaning and not add unverified claims.</div>
+            <div class="card">
+                <div class="form-group"><label>Select Section to Revise</label><select id="revision-section-selector" onchange="loadRevisionSectionTarget()"></select></div>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <label style="font-weight:600; margin-bottom:0.5rem; display:block;">Original</label>
+                    <textarea id="revision-original-text" rows="15"></textarea>
+                </div>
+                <div>
+                    <label style="font-weight:600; margin-bottom:0.5rem; display:block;">AI-Improved Version</label>
+                    <div id="revision-score-badge" style="margin-bottom:0.5rem;"></div>
+                    <textarea id="revision-improved-text" rows="10"></textarea>
+                    <div style="margin-top:0.5rem;">
+                        <button class="btn-secondary" onclick="reviewWorkspaceSection()">Review Section</button>
+                        <button class="btn-primary" id="btn-improve-section" style="display:none;" onclick="improveWorkspaceSection()">Improve Section</button>
+                        <button class="btn-primary" id="btn-use-improved" style="display:none; background-color:var(--green);" onclick="applyImprovedRevision()">Use This Version</button>
+                    </div>
+                    <div id="review-details-box" style="margin-top:1rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="step-panel-12" class="step-panel">
+            <div class="step-header"><div class="step-num">12</div><div class="step-title">Journal Formatting</div></div>
+            <div class="card">
+                <div class="grid-2">
+                    <div class="form-group"><label>Journal / Conference Format</label><select id="formatting-journal-style"><option value="IEEE">IEEE</option><option value="Springer">Springer</option><option value="Elsevier">Elsevier</option><option value="ACM">ACM</option><option value="APA">APA</option></select></div>
+                    <div class="form-group"><label>Section to Format</label><select id="formatting-section-selector"></select></div>
+                </div>
+                <button class="btn-primary" onclick="getFormattingGuidanceReport()">Get Formatting Guidance</button>
+            </div>
+            <div class="card" id="guidance-report-card" style="display:none;">
+                <div class="card-title" id="guidance-report-title">Guidance Requirements</div>
+                <div class="section-box" id="guidance-report-text" style="white-space: pre-wrap;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Download Full Paper</div>
+                <button class="btn-primary" onclick="window.location.href='/api/export/docx'">Download as Word Document (.docx)</button>
+            </div>
+        </div>
+
+        <div id="step-panel-13" class="step-panel">
+            <div class="step-header"><div class="step-num">13</div><div class="step-title">LaTeX Export</div></div>
+            <div class="info-box">Export your paper as a LaTeX package compatible with Overleaf.</div>
+            <div class="card"><button class="btn-primary" onclick="generateLatexPackage()">Generate LaTeX Package</button></div>
+            
+            <div class="card" id="latex-tabs-card" style="display:none;">
+                <div class="tabs-header">
+                    <button class="tab-link active" onclick="switchSubTab(event, 'ltx-main')">main.tex</button>
+                    <button class="tab-link" onclick="switchSubTab(event, 'ltx-bib')">references.bib</button>
+                    <button class="tab-link" onclick="switchSubTab(event, 'ltx-meta')">metadata.json</button>
+                </div>
+                <div id="ltx-main" class="tab-content active"><pre id="code-ltx-main"></pre></div>
+                <div id="ltx-bib" class="tab-content"><pre id="code-ltx-bib"></pre></div>
+                <div id="ltx-meta" class="tab-content"><pre id="code-ltx-meta"></pre></div>
+                
+                <button class="btn-primary" style="margin-top:1rem; background-color:var(--green);" onclick="window.location.href='/api/export/latex/download'">Download LaTeX Package (.zip)</button>
+            </div>
+
+            <div class="info-box" style="margin-top:1rem;">
+                <strong>Overleaf Instructions:</strong><br>
+                1. Download the ZIP above<br>
+                2. Go to overleaf.com → New Project → Upload Project<br>
+                3. Upload the ZIP file<br>
+                4. Compile with pdfLaTeX<br>
+                5. Replace all [CITATION NEEDED] and [UNVERIFIED] markers before submission
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const stepsMapping = {
+            1: "Assignment Setup", 2: "Reference Library", 3: "Topic Discovery",
+            4: "Research Gap", 5: "Thesis Builder", 6: "Outline Builder",
+            7: "Section Builder", 8: "Experiment Builder", 9: "Figures & Charts",
+            10: "Citation Manager", 11: "Revision Workspace", 12: "Journal Formatting",
+            13: "LaTeX Export"
+        };
+
+        let localState = {};
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderSidebarNav();
+            refreshApplicationState();
+        });
+
+        function renderSidebarNav() {
+            const container = document.getElementById("nav-buttons-container");
+            container.innerHTML = "";
+            Object.keys(stepsMapping).forEach(num => {
+                const btn = document.createElement("button");
+                btn.className = "nav-btn";
+                btn.id = `nav-link-${num}`;
+                btn.innerText = `${num}. ${stepsMapping[num]}`;
+                btn.onclick = () => navigateStep(parseInt(num));
+                container.appendChild(btn);
+            });
+        }
+
+        async function refreshApplicationState() {
+            const res = await fetch("/api/state");
+            const state = await res.json();
+            localState = state;
+
+            // UI Elements sync mapping tracking
+            document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
+            document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+            
+            const currentStep = state.current_step;
+            const targetPanel = document.getElementById(`step-panel-${currentStep}`);
+            if (targetPanel) targetPanel.classList.add("active");
+            
+            const targetNavLink = document.getElementById(`nav-link-${currentStep}`);
+            if (targetNavLink) targetNavLink.classList.add("active");
+
+            // Process indicators
+            const pct = Math.floor(((currentStep - 1) / 12) * 100);
+            document.getElementById("progress-bar-fill").style.width = `${pct}%`;
+            document.getElementById("progress-step-text").innerText = `Step ${currentStep} of 13`;
+
+            // Status bar dashboard metrics definitions
+            document.getElementById("stat-refs").innerText = `Refs: ${state.uploaded_references?.length || 0} uploaded`;
+            document.getElementById("stat-topic").innerText = `Topic: ${state.selected_topic ? 'Set' : 'Not set'}`;
+            document.getElementById("stat-sections").innerText = `Sections: ${Object.keys(state.paper_sections || {}).length} written`;
+
+            // Setup parameters dynamic populate validation
+            if (state.project_context && currentStep === 1) {
+                if (state.project_context.title) document.getElementById("setup-title").value = state.project_context.title;
+                if (state.project_context.subject) document.getElementById("setup-subject").value = state.project_context.subject;
+                if (state.project_context.domain) document.getElementById("setup-domain").value = state.project_context.domain;
+                if (state.project_context.level) document.getElementById("setup-level").value = state.project_context.level;
+                if (state.project_context.citation_style) document.getElementById("setup-citation").value = state.project_context.citation_style;
+                if (state.project_context.journal) document.getElementById("setup-journal").value = state.project_context.journal;
+                if (state.project_context.length) document.getElementById("setup-length").value = state.project_context.length;
+                if (state.project_context.deadline) document.getElementById("setup-deadline").value = state.project_context.deadline;
+                if (state.project_context.student_names) document.getElementById("setup-names").value = state.project_context.student_names;
+                if (state.project_context.guide) document.getElementById("setup-guide").value = state.project_context.guide;
+                if (state.project_context.college) document.getElementById("setup-college").value = state.project_context.college;
+                if (state.project_context.prompt) document.getElementById("setup-prompt").value = state.project_context.prompt;
+            }
+
+            if (state.project_context?.title) {
+                document.getElementById("hero-title").innerText = state.project_context.title;
+                document.getElementById("hero-meta").innerText = `${state.project_context.subject || ''} · Research Paper Assistant`;
+            }
+
+            // Sync structural panels runtime metrics configuration
+            if (currentStep === 2) renderReferencesList();
+            if (currentStep === 4) document.getElementById("gap-active-topic").innerHTML = `<strong>Analyzing gap for:</strong> ${state.selected_topic || 'No topic selected'}`;
+            if (currentStep === 5) populateThesisFields();
+            if (currentStep === 7) renderSectionsWorkspace();
+            if (currentStep === 8) syncExperimentDataUI();
+            if (currentStep === 10) renderCitationManagerView();
+            if (currentStep === 11) populateRevisionDropdowns();
+            if (currentStep === 12) populateFormattingDropdowns();
+        }
+
+        async function navigateStep(stepNum) {
+            await fetch("/api/step", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ step: stepNum })
+            });
+            refreshApplicationState();
+        }
+
+        async function saveSetup() {
+            const payload = {
+                title: document.getElementById("setup-title").value,
+                subject: document.getElementById("setup-subject").value,
+                domain: document.getElementById("setup-domain").value,
+                level: document.getElementById("setup-level").value,
+                citation_style: document.getElementById("setup-citation").value,
+                journal: document.getElementById("setup-journal").value,
+                length: document.getElementById("setup-length").value,
+                deadline: document.getElementById("setup-deadline").value,
+                student_names: document.getElementById("setup-names").value,
+                guide: document.getElementById("setup-guide").value,
+                college: document.getElementById("setup-college").value,
+                prompt: document.getElementById("setup-prompt").value
+            };
+            await fetch("/api/setup/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            refreshApplicationState();
+        }
+
+        async function uploadReference() {
+            const fileInput = document.getElementById("ref-file-input");
+            if (!fileInput.files.length) return alert("Select a PDF file to upload.");
+            const formData = new FormData();
+            formData.append("pdf_file", fileInput.files[0]);
+
+            await fetch("/api/references/upload", { method: "POST", body: formData });
+            fileInput.value = "";
+            refreshApplicationState();
+        }
+
+        function renderReferencesList() {
+            const container = document.getElementById("references-list-container");
+            container.innerHTML = "";
+            const refs = localState.uploaded_references || [];
+            if (!refs.length) {
+                container.innerHTML = `<div class="warn-box">No references uploaded yet.</div>`;
+                return;
+            }
+            refs.forEach((ref, index) => {
+                const card = document.createElement("div");
+                card.className = "card";
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <strong>📄 ${ref.title || 'Untitled'}</strong>
+                            <p style="font-size:0.8rem; color:var(--text-muted);">Authors: ${ref.authors || 'Unknown'}</p>
+                            <p style="font-size:0.75rem; color:var(--text-muted);">Keywords: ${ref.keywords || 'None'}</p>
+                            <details style="margin-top:0.5rem; font-size:0.8rem;"><summary>View Abstract</summary><p style="padding:0.5rem; background:#f8fafc;">${ref.abstract || 'No abstract text extracted.'}</p></details>
+                        </div>
+                        <button class="btn-danger" onclick="deleteReference(${index})">Remove</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function deleteReference(index) {
+            await fetch("/api/references/remove", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ index: index })
+            });
+            refreshApplicationState();
+        }
+
+        async function generateTopics() {
+            const container = document.getElementById("topics-output-container");
+            container.innerHTML = `<div class="info-box">Consulting AI Knowledge Advisor... Please wait.</div>`;
+            const res = await fetch("/api/topics/generate", { method: "POST" });
+            const data = await res.json();
+            
+            container.innerHTML = "";
+            if (data.error) {
+                container.innerHTML = `<div class="unverified">${data.error}</div>`;
+                return;
+            }
+            data.topics.forEach((t, i) => {
+                const item = document.createElement("div");
+                item.className = "topic-selection-card";
+                item.innerHTML = `
+                    <div>
+                        <div class="card-title">${t.title}</div>
+                        <span class="badge badge-amber">${t.difficulty}</span>
+                        <span class="badge badge-green">Novelty: ${t.novelty}</span>
+                        <span class="badge badge-blue">Potential: ${t.potential}</span>
+                        <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.4rem;">${t.rationale}</p>
+                    </div>
+                    <button class="btn-primary" onclick="selectTopic('${t.title.replace(/'/g, "\\'")}')">Select</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function selectTopic(topicName) {
+            await fetch("/api/topics/select", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ topic: topicName })
+            });
+            refreshApplicationState();
+        }
+
+        async function useCustomTopic() {
+            const val = document.getElementById("custom-topic-input").value;
+            if (!val) return alert("Enter topic title string context.");
+            await selectTopic(val);
+        }
+
+        async function analyzeResearchGap() {
+            const btn = event.target;
+            btn.innerText = "Analyzing Gaps...";
+            const res = await fetch("/api/gap/analyze", { method: "POST" });
+            const data = await res.json();
+            btn.innerText = "Analyze Research Gap";
+
+            if (data.error) return alert(data.error);
+            
+            document.getElementById("gap-trends").innerHTML = (data.gap.current_trends || []).map(i => `<li>${i}</li>`).join("");
+            document.getElementById("gap-limitations").innerHTML = (data.gap.limitations || []).map(i => `<li>${i}</li>`).join("");
+            document.getElementById("gap-gaps").innerHTML = (data.gap.research_gaps || []).map(i => `<li>${i}</li>`).join("");
+            document.getElementById("gap-opportunities").innerHTML = (data.gap.future_opportunities || []).map(i => `<li>${i}</li>`).join("");
+        }
+
+        function switchSubTab(evt, tabId) {
+            const parent = evt.target.parentElement;
+            parent.querySelectorAll(".tab-link").forEach(b => b.classList.remove("active"));
+            evt.target.classList.add("active");
+            
+            const contentParent = document.getElementById(tabId).parentElement;
+            contentParent.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+            document.getElementById(tabId).classList.add("active");
+        }
+
+        async function generateThesisFramework() {
+            const res = await fetch("/api/thesis/generate", { method: "POST" });
+            const data = await res.json();
+            if (data.error) return alert(data.error);
+            refreshApplicationState();
+        }
+
+        function populateThesisFields() {
+            const t = localState.thesis || {};
+            document.getElementById("thesis-problem").value = t.problem_statement || "";
+            document.getElementById("thesis-question").value = t.research_question || "";
+            document.getElementById("thesis-hypothesis").value = t.hypothesis || "";
+            document.getElementById("thesis-contribution").value = t.expected_contribution || "";
+
+            const objContainer = document.getElementById("objectives-inputs-container");
+            objContainer.innerHTML = "<label style='display:block; font-size:0.85rem; font-weight:500; margin-bottom:0.4rem;'>Research Objectives</label>";
+            const objs = t.objectives || ["", "", ""];
+            objs.forEach((obj, idx) => {
+                objContainer.innerHTML += `<input type="text" class="thesis-obj-input" style="margin-bottom:0.4rem;" value="${obj}" placeholder="Objective ${idx+1}">`;
+            });
+        }
+
+        async function saveThesisState() {
+            const objInputs = document.querySelectorAll(".thesis-obj-input");
+            const objectivesArr = [];
+            objInputs.forEach(i => { if (i.value) objectivesArr.push(i.value); });
+
+            const payload = {
+                thesis: {
+                    problem_statement: document.getElementById("thesis-problem").value,
+                    research_question: document.getElementById("thesis-question").value,
+                    hypothesis: document.getElementById("thesis-hypothesis").value,
+                    expected_contribution: document.getElementById("thesis-contribution").value,
+                    objectives: objectivesArr
+                }
+            };
+            await fetch("/api/thesis/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            navigateStep(6);
+        }
+
+        async function generateOutlineStructure() {
+            const res = await fetch("/api/outline/generate", { method: "POST" });
+            const data = await res.json();
+            if (data.error) return alert(data.error);
+            renderOutlineAccordion();
+        }
+
+        function renderOutlineAccordion() {
+            const container = document.getElementById("outline-accordion-container");
+            container.innerHTML = "";
+            const sections = localState.outline || [];
+            sections.forEach((sec, idx) => {
+                const box = document.createElement("div");
+                box.className = "card";
+                let subsHtml = "";
+                (sec.subsections || []).forEach((sub, sidx) => {
+                    subsHtml += `<input type="text" class="outline-sub-input" data-sec="${idx}" data-sub="${sidx}" style="margin-bottom:0.4rem;" value="${sub}">`;
+                });
+                box.innerHTML = `
+                    <strong>${idx+1}. ${sec.title}</strong>
+                    <div style="margin-top:0.5rem; padding-left:1rem;">
+                        ${subsHtml}
+                        <div style="display:flex; gap:0.5rem; margin-top:0.4rem;">
+                            <input type="text" id="add-sub-text-${idx}" placeholder="New subsection...">
+                            <button class="btn-secondary" onclick="addSubsectionToOutline(${idx})">Add</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(box);
+            });
+        }
+
+        async function addSubsectionToOutline(secIdx) {
+            const input = document.getElementById(`add-sub-text-${secIdx}`);
+            if (!input.value) return;
+            localState.outline[secIdx].subsections.push(input.value);
+            
+            await fetch("/api/outline/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ outline: localState.outline })
+            });
+            renderOutlineAccordion();
+        }
+
+        function renderSectionsWorkspace() {
+            const sectionsList = ["Abstract", "Introduction", "Literature Review", "Methodology", "Results", "Discussion", "Conclusion"];
+            const header = document.getElementById("sections-tabs-header");
+            const contents = document.getElementById("sections-tabs-contents");
+            
+            header.innerHTML = "";
+            contents.innerHTML = "";
+
+            sectionsList.forEach((sec, idx) => {
+                const activeClass = idx === 0 ? "active" : "";
+                header.innerHTML += `<button class="tab-link ${activeClass}" onclick="switchSectionTab(event, 'sec-tab-${sec}')">${sec}</button>`;
+                
+                const currentText = localState.paper_sections?.[sec] || "";
+                let citationWarning = "";
+                if (currentText.includes("[CITATION NEEDED]") || currentText.includes("[UNVERIFIED")) {
+                    citationWarning = `<div class="warn-box">This section contains citation markers. Verify before submission.</div>`;
+                }
+
+                contents.innerHTML += `
+                    <div id="sec-tab-${sec}" class="tab-content ${activeClass}">
+                        <button class="btn-primary" style="margin-bottom:1rem;" onclick="generateSectionContent('${sec}')">Generate ${sec}</button>
+                        ${citationWarning}
+                        <textarea id="textarea-sec-${sec}" rows="12" onchange="saveSectionDirect('${sec}')">${currentText}</textarea>
+                        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;" id="word-count-${sec}">Words: ${currentText.split(/\s+/).filter(Boolean).length}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function switchSectionTab(evt, tabId) {
+            const parent = evt.target.parentElement;
+            parent.querySelectorAll(".tab-link").forEach(b => b.classList.remove("active"));
+            evt.target.classList.add("active");
+
+            const contentParent = document.getElementById(tabId).parentElement;
+            contentParent.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+            document.getElementById(tabId).classList.add("active");
+        }
+
+        async function generateSectionContent(secName) {
+            const textarea = document.getElementById(`textarea-sec-${secName}`);
+            textarea.value = "Writing section contents via Gemini Architecture Pipeline...";
+            
+            const res = await fetch("/api/sections/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ section: secName })
+            });
+            const data = await res.json();
+            if (data.error) {
+                textarea.value = data.error;
+                return;
+            }
+            textarea.value = data.content;
+            document.getElementById(`word-count-${secName}`).innerText = `Words: ${data.content.split(/\s+/).filter(Boolean).length}`;
+            refreshApplicationState();
+        }
+
+        async function saveSectionDirect(secName) {
+            const text = document.getElementById(`textarea-sec-${secName}`).value;
+            await fetch("/api/sections/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ section: secName, content: text })
+            });
+            document.getElementById(`word-count-${secName}`).innerText = `Words: ${text.split(/\s+/).filter(Boolean).length}`;
+        }
+
+        async function saveExperimentData() {
+            const payload = {
+                experiment: {
+                    dataset: document.getElementById("exp-dataset").value,
+                    model: document.getElementById("exp-model").value,
+                    parameters: document.getElementById("exp-params").value,
+                    accuracy: parseFloat(document.getElementById("exp-accuracy").value),
+                    precision: parseFloat(document.getElementById("exp-precision").value),
+                    recall: parseFloat(document.getElementById("exp-recall").value),
+                    f1_score: parseFloat(document.getElementById("exp-f1").value),
+                    baseline: document.getElementById("exp-baseline").value,
+                    notes: document.getElementById("exp-notes").value
+                }
+            };
+            await fetch("/api/experiments/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            refreshApplicationState();
+        }
+
+        function syncExperimentDataUI() {
+            const exp = localState.experiment_data || {};
+            if (exp.dataset) document.getElementById("exp-dataset").value = exp.dataset;
+            if (exp.model) document.getElementById("exp-model").value = exp.model;
+            if (exp.parameters) document.getElementById("exp-params").value = exp.parameters;
+            if (exp.accuracy) { document.getElementById("exp-accuracy").value = exp.accuracy; document.getElementById("m-acc").innerText = exp.accuracy + "%"; }
+            if (exp.precision) { document.getElementById("exp-precision").value = exp.precision; document.getElementById("m-pre").innerText = exp.precision + "%"; }
+            if (exp.recall) { document.getElementById("exp-recall").value = exp.recall; document.getElementById("m-rec").innerText = exp.recall + "%"; }
+            if (exp.f1_score) { document.getElementById("exp-f1").value = exp.f1_score; document.getElementById("m-f1").innerText = exp.f1_score + "%"; }
+            if (exp.baseline) document.getElementById("exp-baseline").value = exp.baseline;
+            if (exp.notes) document.getElementById("exp-notes").value = exp.notes;
+        }
+
+        async function generateExperimentSummary() {
+            await fetch("/api/experiments/summarize", { method: "POST" });
+            alert("Results summary text updated and synced directly into your paper data structure.");
+        }
+
+        async function generateChartImage() {
+            const csvInput = document.getElementById("chart-csv-input");
+            if (!csvInput.files.length) return alert("Upload tracking metrics database CSV structure.");
+            
+            const fd = new FormData();
+            fd.append("csv_file", csvInput.files[0]);
+            fd.append("chart_type", document.getElementById("chart-type").value);
+            fd.append("x_col", document.getElementById("chart-x-col").value);
+            fd.append("y_col", document.getElementById("chart-y-col").value);
+
+            const res = await fetch("/api/charts/generate", { method: "POST", body: fd });
+            if (res.status === 200) {
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                document.getElementById("rendered-chart-img").src = url;
+                document.getElementById("chart-rendering-viewport").style.display = "block";
+            } else {
+                alert("Processing mapping mismatch variables inside structured CSV engine data logic.");
+            }
+        }
+
+        function downloadChartDirect() {
+            const src = document.getElementById("rendered-chart-img").src;
+            if (!src) return;
+            const a = document.createElement("a");
+            a.href = src;
+            a.download = "chart.png";
+            a.click();
+        }
+
+        function renderCitationManagerView() {
+            const vZone = document.getElementById("verified-citations-zone");
+            const uZone = document.getElementById("unverified-citations-zone");
+            vZone.innerHTML = "";
+            uZone.innerHTML = "";
+
+            (localState.uploaded_references || []).forEach((r, idx) => {
+                vZone.innerHTML += `<div class="verified">[${idx+1}] <strong>${r.title}</strong><br><small>${r.authors} · File: ${r.filename}</small></div>`;
+            });
+
+            // Parse runtime inline text unverified references markers parsing setup logic tracking
+            let unverifiedMarkersFoundCount = 0;
+            Object.keys(localState.paper_sections || {}).forEach(sec => {
+                const text = localState.paper_sections[sec];
+                if (text.includes("[CITATION NEEDED]") || text.includes("[UNVERIFIED")) {
+                    unverifiedMarkersFoundCount++;
+                    uZone.innerHTML += `<div class="unverified"><strong>${sec}</strong>: Unverified metadata markers discovered inside script tracking text blocks.</div>`;
+                }
+            });
+
+            (localState.citations?.unverified || []).forEach(c => {
+                uZone.innerHTML += `<div class="unverified"><strong>${c.title}</strong> — ${c.authors}</div>`;
+            });
+            
+            if (unverifiedMarkersFoundCount === 0 && (!localState.citations?.unverified?.length)) {
+                uZone.innerHTML = "<div class='info-box'>Clear of any validation markers.</div>";
+            }
+        }
+
+        async function trackManualUnverifiedCitation() {
+            const title = document.getElementById("track-cite-title").value;
+            const authors = document.getElementById("track-cite-authors").value;
+            await fetch("/api/citations/add_unverified", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title, authors })
+            });
+            document.getElementById("track-cite-title").value = "";
+            document.getElementById("track-cite-authors").value = "";
+            refreshApplicationState();
+        }
+
+        function populateRevisionDropdowns() {
+            const select = document.getElementById("revision-section-selector");
+            const previousSelection = select.value;
+            select.innerHTML = "";
+            Object.keys(localState.paper_sections || {}).forEach(sec => {
+                select.innerHTML += `<option value="${sec}">${sec}</option>`;
+            });
+            if (previousSelection && localState.paper_sections?.[previousSelection]) {
+                select.value = previousSelection;
+            } else {
+                loadRevisionSectionTarget();
+            }
+        }
+
+        function loadRevisionSectionTarget() {
+            const sec = document.getElementById("revision-section-selector").value;
+            document.getElementById("revision-original-text").value = localState.paper_sections?.[sec] || "";
+            document.getElementById("revision-improved-text").value = "";
+            document.getElementById("revision-score-badge").innerHTML = "";
+            document.getElementById("review-details-box").innerHTML = "";
+            document.getElementById("btn-improve-section").style.display = "none";
+            document.getElementById("btn-use-improved").style.display = "none";
+        }
+
+        async function reviewWorkspaceSection() {
+            const sec = document.getElementById("revision-section-selector").value;
+            const txt = document.getElementById("revision-original-text").value;
+            
+            document.getElementById("review-details-box").innerHTML = "Running quality checking algorithms across framework metrics...";
+            
+            const res = await fetch("/api/revision/review", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ section: sec, content: txt })
+            });
+            const data = await res.json();
+            
+            const score = data.review.overall_score;
+            let color = score >= 7 ? "green" : (score >= 5 ? "amber" : "red");
+            document.getElementById("revision-score-badge").innerHTML = `<span class="badge badge-${color}">Reviewer Score: ${score}/10</span>`;
+
+            let detailsHtml = `<strong>Strengths:</strong><ul>` + data.review.strengths.map(i=>`<li>${i}</li>`).join("") + `</ul>`;
+            detailsHtml += `<strong>Weaknesses:</strong><ul>` + data.review.weaknesses.map(i=>`<li>${i}</li>`).join("") + `</ul>`;
+            detailsHtml += `<strong>Suggestions:</strong><ul>` + data.review.suggestions.map(i=>`<li>${i}</li>`).join("") + `</ul>`;
+            
+            document.getElementById("review-details-box").innerHTML = detailsHtml;
+            document.getElementById("btn-improve-section").style.display = "inline-block";
+        }
+
+        async function improveWorkspaceSection() {
+            const sec = document.getElementById("revision-section-selector").value;
+            const txt = document.getElementById("revision-original-text").value;
+            const suggestionsText = document.getElementById("review-details-box").innerText;
+
+            document.getElementById("revision-improved-text").value = "Executing safe rewrite workflows minimizing information hallucination errors...";
+            
+            const res = await fetch("/api/revision/improve", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ section: sec, content: txt, suggestions: suggestionsText })
+            });
+            const data = await res.json();
+            document.getElementById("revision-improved-text").value = data.improved;
+            document.getElementById("btn-use-improved").style.display = "inline-block";
+        }
+
+        async function applyImprovedRevision() {
+            const sec = document.getElementById("revision-section-selector").value;
+            const val = document.getElementById("revision-improved-text").value;
+            await fetch("/api/sections/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ section: sec, content: val })
+            });
+            alert("Section mapping overwritten seamlessly with optimized iteration script structure.");
+            refreshApplicationState();
+        }
+
+        function populateFormattingDropdowns() {
+            const select = document.getElementById("formatting-section-selector");
+            select.innerHTML = "";
+            Object.keys(localState.paper_sections || {}).forEach(sec => {
+                select.innerHTML += `<option value="${sec}">${sec}</option>`;
+            });
+        }
+
+        async function getFormattingGuidanceReport() {
+            const journal = document.getElementById("formatting-journal-style").value;
+            const sec = document.getElementById("formatting-section-selector").value;
+            const content = localState.paper_sections?.[sec] || "";
+
+            const res = await fetch("/api/formatting/guide", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ journal, section: sec, content })
+            });
+            const data = await res.json();
+            
+            document.getElementById("guidance-report-title").innerText = `${journal} Requirements Checklist Style Mapping Report`;
+            document.getElementById("guidance-report-text").innerText = data.guidance;
+            document.getElementById("guidance-report-card").style.display = "block";
+        }
+
+        async function generateLatexPackage() {
+            const res = await fetch("/api/export/latex/generate", { method: "POST" });
+            const data = await res.json();
+            
+            if (data.success) {
+                document.getElementById("code-ltx-main").innerText = data.latex["main.tex"];
+                document.getElementById("code-ltx-bib").innerText = data.latex["references.bib"];
+                document.getElementById("code-ltx-meta").innerText = data.latex["metadata.json"];
+                document.getElementById("latex-tabs-card").style.display = "block";
+            }
+        }
+    </script>
+</body>
+</html>
